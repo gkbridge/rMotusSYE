@@ -1,0 +1,123 @@
+```{r}
+install.packages("remotes")
+remotes::update_packages()
+install.packages(c("motus", "motusData"), 
++                  repos = c(birdscanada = 'https://birdscanada.r-universe.dev',
++                            CRAN = 'https://cloud.r-project.org'))
+```
+
+```{r}
+library(motus)
+library(motusData)
+install.packages(c("tidyverse", "ggmap", "rnaturalearth"))
+
+install.packages(c("rnaturalearthhires", "rnaturalearthdata"),
+                 repos = c(ropensci = 'https://ropensci.r-universe.dev',  
+                           CRAN = 'https://cloud.r-project.org'))
+
+library(motus)
+library(rnaturalearth)
+library(tidyverse)
+library(ggmap)
+```
+
+```{r}
+library(dplyr)
+library(lubridate)
+library(sf)
+```
+
+```{r}
+sql.motus <- tagme(projRecv = 176, new = TRUE, update = TRUE)
+```
+
+```{r}
+tbl.alltags <- tbl(sql.motus, "alltags")
+```
+
+```{r}
+df.alltags <- tbl.alltags %>%
+  collect() %>%
+  mutate(time = as_datetime(ts))
+```
+
+```{r}
+saveRDS(df.alltags, "my_motus_data.rds")
+```
+
+# Chapter 3
+```{r}
+Sys.setenv(TZ = "UTC")
+
+getwd()
+sql.motus <- tagme(projRecv = 176, new = FALSE, update = TRUE, dir = "./motus/")
+
+## Accessing downloaded detection data
+library(DBI)
+library(RSQLite)
+
+str(tbl.alltags)
+
+tbl.alltags %>% 
+  collect() %>%
+  names() # list the variable names in the table
+```
+
+## Converting to flat data
+```{r}
+names(df.alltags)     # field names
+str(df.alltags)       # structure of your data fields
+head(df.alltags)      # prints the first 6 rows of your df to the console
+summary(df.alltags)   # summary of each column in your df
+
+df.alltags <- tbl.alltags %>% 
+  collect() %>% 
+  as.data.frame() %>%     # for all fields in the df (data frame)
+  mutate(time = as_datetime(ts))
+
+# the tz = "UTC" is not necessary here, provided you have set your system time to UTC
+# ... but it serves as a useful reminder!
+
+# To select certain variables
+# to grab a subset of variables, in this case a unique list of Motus tag IDs at
+# each receiver and antenna.
+df.alltagsSub <- tbl.alltags %>%
+  select(recv, port, motusTagID) %>%
+  distinct() %>% 
+  collect() %>% 
+  as.data.frame() 
+
+# To select certain tag IDs
+# filter to include only motusTagIDs 16011, 23316
+df.alltagsSub <- tbl.alltags %>%
+  filter(motusTagID %in% c(16011, 23316)) %>% 
+  collect() %>% 
+  as.data.frame() %>%    
+  mutate(time = as_datetime(ts))
+
+saveRDS(df.alltags, "./motus/df_alltags.rds")  
+```
+
+## Chapter 4
+```{r}
+metadata(sql.motus, projectIDs = 176)
+
+tbl.tags <- tbl(sql.motus, "tags") 
+df.tags <- tbl.tags %>%
+  filter(projectID == 176) %>%
+  collect() %>%
+  as.data.frame()
+```
+
+```{r}
+usethis::use_git_config(user.name = "Grace Bridge", user.email = "gkbridger@gmail.com")
+usethis::create_github_token()
+
+gitcreds::gitcreds_set()
+gitcreds::gitcreds_get()
+```
+
+```{r}
+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
+```
+
